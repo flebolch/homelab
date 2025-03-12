@@ -127,7 +127,7 @@ Docker
 
 #remove '#' from PublickeyAuthentication yes & PermirRootLogin prohib-password from /etc/ssh/sshd_config : 
 nano /etc/ssh/ssd_config
-systemctl sshd restart
+systemctl restart sshd
 
 ```bash
     #Create new user  : 
@@ -136,7 +136,7 @@ systemctl sshd restart
     adduser newuser sudo
 
 ```
-✅ [ ] Configure static IP & hostname
+ [✅]  Configure static IP & hostname
 
 ```bash
     #Create new user  : 
@@ -159,81 +159,102 @@ systemctl sshd restart
 
 Log as newuser add your private key to .ssh/authorized_keys
 
-✅ [ ] Install essential packages (ufw, curl, htop, vim, git, docker)
+ [✅] Install essential packages (ufw, curl, htop, vim, git, docker)
 
-sudo apt install ufw curl htop vim git docker
+```bash
+#Install essential packages
+sudo apt install ufw curl htop vim git 
 
+#docker installtion script : 
+mkdir -p ~/docker/scripts/install/
+curl -fsSL https://get.docker.com -o ~/docker/scripts/install/get-docker.sh
+sudo sh ~/docker/scripts/install/get-docker.sh
 
-Source : 
-https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository
-
-Install using the apt repository
-Before you install Docker Engine for the first time on a new host machine, you need to set up the Docker apt repository. Afterward, you can install and update Docker from the repository.
-
-Set up Docker's apt repository.
-
-
-# Add Docker's official GPG key:
-sudo apt-get update
-sudo apt-get install ca-certificates curl
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-
-# Add the repository to Apt sources:
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
-Install the Docker packages.
-
-Latest Specific version
-To install the latest version, run:
+```
 
 
- sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-Verify that the installation is successful by running the hello-world image:
+ [✅] Harden Ubuntu security (ufw configuration, Fail2Ban, CrowdSec, automatic updates)
 
-
- sudo docker run hello-world
-This command downloads a test image and runs it in a container. When the container runs, it prints a confirmation message and exits.
-
-You have now successfully installed and started Docker Engine.
-
-✅ [ ] Harden Ubuntu security (ufw configuration, Fail2Ban, CrowdSec, automatic updates)
-
-ufw : 
+```bash
+#Set basic firewall rules : 
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow from <ip range /cidr>
 
-Then let's activate UFW using the command:
+#Then let's activate UFW using the command:
 sudo ufw enable
+```
 
 Fail2Ban: 
+```bash
+# Update package list and install Fail2Ban
 sudo apt-get update
 sudo apt-get install fail2ban
+```
+
 Install Fail2Ban: Open a terminal and run the following command to install Fail2Ban:
 
-Configure Fail2Ban: The main configuration file for Fail2Ban is located at /etc/fail2ban/jail.conf. However, it is recommended to create a local configuration file to avoid overwriting your settings during updates. Copy the default configuration file to a new file called jail.local:
+```bash
+# Install Fail2Ban
+sudo apt-get install fail2ban
+```
 
-Edit the Configuration: Open the jail.local file in a text editor:
+Configure Fail2Ban: The main configuration file for Fail2Ban is located at `/etc/fail2ban/jail.conf`. However, it is recommended to create a local configuration file to avoid overwriting your settings during updates. Copy the default configuration file to a new file called `jail.local`:
+
+```bash
+# Copy the default configuration to jail.local
+sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+```
+
+Edit the Configuration: Open the `jail.local` file in a text editor:
+
+```bash
+# Open jail.local in a text editor
+sudo nano /etc/fail2ban/jail.local
+```
 
 Modify the settings as needed. For example, you can set the default ban time, find time, and max retry attempts:
 
-Enable Jails: In the jail.local file, you can enable specific jails for services you want to protect. For example, to enable the SSH jail, find the [sshd] section and set enabled to true:
+```bash
+# Example settings in jail.local
+[DEFAULT]
+bantime  = 10m
+findtime = 10m
+maxretry = 5
+```
+
+Enable Jails: In the `jail.local` file, you can enable specific jails for services you want to protect. For example, to enable the SSH jail, find the `[sshd]` section and set `enabled` to `true`:
+
+```bash
+# Enable SSH jail in jail.local
+[sshd]
+enabled = true
+```
 
 Restart Fail2Ban: After making your changes, restart the Fail2Ban service to apply the new configuration:
 
+```bash
+# Restart Fail2Ban service
+sudo systemctl restart fail2ban
+```
+
 Check Status: You can check the status of Fail2Ban and see which jails are active by running:
 
-Monitor Logs: Fail2Ban logs can be found in /var/log/fail2ban.log. You can monitor these logs to see which IPs have been banned:
+```bash
+# Check Fail2Ban status
+sudo fail2ban-client status
+```
+
+Monitor Logs: Fail2Ban logs can be found in `/var/log/fail2ban.log`. You can monitor these logs to see which IPs have been banned:
+
+```bash
+# Monitor Fail2Ban logs
+sudo tail -f /var/log/fail2ban.log
+```
 
 By following these steps, you should have Fail2Ban installed and configured to protect your services from brute-force attacks.
 
-CrowdSec : 
-To install and set up CrowdSec on a Linux machine, follow these steps:
+```bash
 # Add the CrowdSec repository
 sudo apt-get install -y curl
 curl -s https://packagecloud.io/install/repositories/crowdsec/crowdsec/script.deb.sh | sudo bash
@@ -241,44 +262,43 @@ curl -s https://packagecloud.io/install/repositories/crowdsec/crowdsec/script.de
 # Install CrowdSec
 sudo apt-get install crowdsec
 
-Install CrowdSec: Open a terminal and run the following commands to install CrowdSec:
-
-Configure CrowdSec: CrowdSec comes with a default configuration that should work for most setups. However, you can customize it as needed. The main configuration file is located at /etc/crowdsec/config.yaml.
-
-To edit the configuration file, open it in a text editor:
+# Configure CrowdSec
 sudo nano /etc/crowdsec/config.yaml
 
-Make any necessary changes and save the file.
-
-Install Collections: 
+# Install SSHD collection
 sudo cscli collections install crowdsecurity/sshd
 
-CrowdSec uses collections to parse logs and detect attacks. You can install collections using the cscli command. For example, to install the crowdsecurity/sshd collection:
-
-Enable Bouncers: Bouncers are used to take action against detected threats. You can install and configure bouncers using the cscli command. For example, to install the crowdsecurity/firewall-bouncer:
+# Install and configure firewall bouncer
 sudo apt-get install crowdsec-firewall-bouncer-iptables
+sudo nano /etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml
 
-After installing the bouncer, you may need to configure it. The configuration file is usually located at /
-etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml.
-
-Start and Enable CrowdSec: Start the CrowdSec service and enable it to start on boot:
+# Start and enable CrowdSec
 sudo systemctl start crowdsec
 sudo systemctl enable crowdsec
 
-Check Status: You can check the status of CrowdSec to ensure it is running correctly:
-
+# Check CrowdSec status
 sudo systemctl status crowdsec
 
-Monitor Logs: CrowdSec logs can be found in /var/log/crowdsec.log. You can monitor these logs to see the activity and any detected threats:
-
+# Monitor CrowdSec logs
+sudo tail -f /var/log/crowdsec.log
+```
 By following these steps, you should have CrowdSec installed and configured to protect your system from various types of attacks.
 
-Setup automatic updates : 
+```bash
+# Create the update script
+nano /home/$USERT/docker/scripts/update_script.sh
 
-nano /etc/cron.d
+# Make the script executable
+chmod +x /home/$USERT/docker/scripts/update_script.sh
 
-# Run the update script every day at 2 AM
-0 2 * * * /home/francky/docker/update_script.sh >> /home/francky/docker/update.log 2>&1
+# Add the following line to the cron job file
+```bash
+# Add the update script to run daily at 2 AM using the cron command
+echo "0 2 * * * /home/$USERT/docker/scripts/update_script.sh >> /home/$USERT/docker/logs/system/update.log 2>&1" | sudo tee -a /var/spool/cron/crontabs/root
+
+# Verify the crontab entry
+sudo crontab -l
+```
 
 
 
@@ -288,13 +308,25 @@ nano /etc/cron.d
 🔹 Milestone 2: Docker & Containerization (Priority: High)
 ✅ [ ] Install Docker & Docker Compose
 
+check if installed: 
+```bash
+docker --v 
+docker-compose --v
+````
+
+
 ✅ [ ] Configure user permissions for Docker
+
+#Add current user to Docker group 
+sudo usermod -aG docker $USER
 
 ✅ [ ] Set up Portainer for container management
 
+Docker compose file : docker/docker-admin
+
 ✅ [ ] Configure network bridge for Docker containers
 
------------------------------
+
 
 
 🔹 Milestone 3: Cloudflare Integration (Priority: Critical)
